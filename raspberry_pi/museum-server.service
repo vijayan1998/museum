@@ -1,0 +1,14 @@
+[Unit]
+Description=Museum offline TCP server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Adjust the path if you copy the file elsewhere.
+ExecStart=/usr/bin/python3 /home/pi/museum_server.py
+Restart=always
+RestartSec=2
+User=pi
+
+[Install]
+WantedBy=multi-user.target
