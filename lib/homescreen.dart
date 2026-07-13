@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'services/pi_connection.dart';
 import 'songplayscreen.dart';
+import 'widgets/pi_status_chip.dart';
 
 /// A single exhibit / stage in the museum tour.
 class Stage {
@@ -60,6 +62,15 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.brush,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Search the phone's hotspot for the Pi's MQTT broker as soon as the app
+    // opens. If the Pi hasn't joined yet this fails quietly and the status chip
+    // shows an error; tapping the chip retries.
+    PiConnection.instance.discover();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,12 +147,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _stageCardFor(BuildContext context, int index) {
+    final stage = _stages[index];
     return _StageCard(
-      stage: _stages[index],
+      stage: stage,
       index: index,
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const SongplayScreen()),
-      ),
+      onTap: () {
+        // Publish the selected exhibit to the Pi over MQTT (no-op if not
+        // connected), then open the audio-guide player.
+        PiConnection.instance.sendCommand('select_stage', {
+          'stage': index + 1,
+          'title': stage.title,
+        });
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SongplayScreen()),
+        );
+      },
     );
   }
 
@@ -174,28 +194,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        // Raised neumorphic menu chip.
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: kBackground,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: kDarkShadow,
-                offset: Offset(5, 5),
-                blurRadius: 10,
-              ),
-              BoxShadow(
-                color: kLightShadow,
-                offset: Offset(-5, -5),
-                blurRadius: 10,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.museum, color: kAccent, size: 24),
-        ),
+        // Live Raspberry Pi MQTT connection status — tap to search / retry.
+        const SizedBox(width: 12),
+        const PiStatusChip(),
       ],
     );
   }

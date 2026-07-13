@@ -37,6 +37,7 @@ dependencies:
 
   # Audio playback for the song player screen.
   audioplayers: ^6.1.0
+  mqtt_client: ^10.11.11
 
 dev_dependencies:
   flutter_test:
